@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cladinstyleboutique.com/sitemap.xml
