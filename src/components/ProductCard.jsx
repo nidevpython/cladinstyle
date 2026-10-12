@@ -74,6 +74,7 @@ export default function ProductCard({ product }) {
           src={product.image} 
           alt={product.name} 
           loading="lazy" 
+          decoding="async"
           className="w-full h-full object-cover"
         />
 
@@ -105,9 +106,9 @@ export default function ProductCard({ product }) {
       </Link>
 
       {/* Info Block */}
-      <div className="p-3.5 text-left flex-grow flex flex-col justify-between">
+      <div className="p-2.5 sm:p-3.5 text-left flex-grow flex flex-col justify-between">
         <div>
-          <span className="text-[8px] font-semibold text-black/40 uppercase tracking-widest">
+          <span className="text-[8px] font-semibold text-black/40 uppercase tracking-widest block truncate">
             {product.category === 'baby' ? "Baby's Boutique" : "Women's Collection"}
           </span>
           <Link to={`/product/${product.id}`} onClick={handleProductClick}>
@@ -117,18 +118,18 @@ export default function ProductCard({ product }) {
           </Link>
         </div>
 
-        <div className="flex justify-between items-center mt-2.5">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-black">₹{product.price.toLocaleString()}</span>
+        <div className="flex justify-between items-center gap-1.5 mt-2.5">
+          <div className="flex items-baseline gap-1 min-w-0">
+            <span className="text-[11px] sm:text-xs font-bold text-black">₹{product.price.toLocaleString()}</span>
             {product.oldPrice && (
-              <span className="text-[10px] text-black/40 line-through">₹{product.oldPrice.toLocaleString()}</span>
+              <span className="text-[9px] sm:text-[10px] text-black/40 line-through truncate">₹{product.oldPrice.toLocaleString()}</span>
             )}
           </div>
 
           {/* Mobile quick add button */}
           <button 
             onClick={handleAddClick}
-            className="md:hidden bg-black text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1.5"
+            className="md:hidden shrink-0 bg-black text-white text-[8px] sm:text-[9px] font-bold tracking-widest uppercase px-2.5 py-1.5 active:bg-accent transition-colors"
           >
             + Add
           </button>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
 import { Filter, X } from 'lucide-react';
+import newArrivalsBanner from '../assets/images/new-arrivals-banner.jpg';
 
 export default function Shop({ type }) {
   const { products, loadingProducts } = useApp();
@@ -12,10 +13,11 @@ export default function Shop({ type }) {
   const [filteredList, setFilteredList] = useState([]);
 
   // Filter criteria states
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [maxPrice, setMaxPrice] = useState(2500);
-  const [sortBy, setSortBy] = useState('featured');
+  const [sortBy, setSortBy] = useState('newest');
 
   // Mobile filters overlay drawer state
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -39,13 +41,17 @@ export default function Shop({ type }) {
     setFilteredList(list);
 
     // Reset filters on page changes
+    setSelectedCategories([]);
     setSelectedSizes([]);
     setSelectedColors([]);
     setMaxPrice(2500);
-    setSortBy('featured');
+    setSortBy('newest');
   }, [type, products, loadingProducts]);
 
-  // Derive unique sizes and colors dynamically from matching list
+  // Derive unique categories, sizes, and colors dynamically from matching list
+  const availableCategories = Array.from(
+    new Set(baseList.map(p => p.categoryName || p.category).filter(Boolean))
+  ).sort();
   const availableSizes = Array.from(new Set(baseList.flatMap(p => p.sizes || []))).sort();
   const availableColors = Array.from(new Set(baseList.flatMap(p => p.colors || []).filter(c => c !== 'Default'))).sort();
 
@@ -53,34 +59,49 @@ export default function Shop({ type }) {
   useEffect(() => {
     let list = [...baseList];
 
-    // 1. Size Check
+    // 1. Category Check
+    if (selectedCategories.length > 0) {
+      list = list.filter(p => selectedCategories.includes(p.categoryName || p.category));
+    }
+
+    // 2. Size Check
     if (selectedSizes.length > 0) {
       list = list.filter(p => p.sizes?.some(s => selectedSizes.includes(s)));
     }
 
-    // 2. Color Check
+    // 3. Color Check
     if (selectedColors.length > 0) {
       list = list.filter(p => p.colors?.some(c => selectedColors.includes(c)));
     }
 
-    // 3. Price Check
+    // 4. Price Check
     list = list.filter(p => p.price <= maxPrice);
 
-    // 4. Sorting Options
+    // 5. Sorting Options using actual database created_at listing dates
     if (sortBy === 'price-low') {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-high') {
       list.sort((a, b) => b.price - a.price);
     } else if (sortBy === 'newest') {
-      list.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    } else if (sortBy === 'oldest') {
+      list.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
     } else if (sortBy === 'best') {
       list.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
+    } else if (sortBy === 'featured') {
+      list.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
     }
 
     setFilteredList(list);
-  }, [baseList, selectedSizes, selectedColors, maxPrice, sortBy]);
+  }, [baseList, selectedCategories, selectedSizes, selectedColors, maxPrice, sortBy]);
 
   // Handler helpers
+  const handleCategoryToggle = (cat) => {
+    setSelectedCategories(prev => 
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
   const handleSizeToggle = (size) => {
     setSelectedSizes(prev => 
       prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
@@ -100,30 +121,35 @@ export default function Shop({ type }) {
         return {
           title: 'Baby Boutique',
           banner: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=1200&auto=format&fit=crop',
+          position: 'center 25%',
           desc: 'Soft natural fabrics & timeless designs carefully crafted for baby\'s delicate skin.'
         };
       case 'women':
         return {
           title: 'Women Collection',
           banner: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1200&auto=format&fit=crop',
+          position: 'center 20%',
           desc: 'Elegant design lines & luxurious contemporary silhouettes crafted for every special occasion.'
         };
       case 'new':
         return {
           title: 'New Arrivals',
-          banner: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop',
+          banner: newArrivalsBanner,
+          position: '74% 22%',
           desc: 'Explore our latest contemporary designs and luxury essentials for women and babies.'
         };
       case 'best':
         return {
           title: 'Best Sellers',
           banner: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1200&auto=format&fit=crop',
+          position: 'center 20%',
           desc: 'Our most-loved boutique apparel and GOTS-certified baby essentials, back by popular demand.'
         };
       default:
         return {
           title: 'Shop All',
-          banner: heroImage,
+          banner: newArrivalsBanner,
+          position: '74% 22%',
           desc: 'Curated apparel collections for her and little ones.'
         };
     }
@@ -140,22 +166,27 @@ export default function Shop({ type }) {
       </nav>
 
       {/* 2. Page Category Banner */}
-      <div className="relative aspect-[32/9] overflow-hidden border border-beige flex items-center p-6 md:p-10 mb-8 text-left">
-        <img src={meta.banner} alt={meta.title} className="absolute inset-0 w-full h-full object-cover object-center z-1" />
-        <div className="absolute inset-0 bg-black/45 z-2" />
-        <div className="relative z-10 text-white max-w-[450px]">
-          <h2 className="font-serif text-3xl md:text-4xl font-black uppercase tracking-wider leading-none">
+      <div className="relative min-h-[185px] sm:min-h-[210px] md:min-h-0 aspect-[16/9] sm:aspect-[24/9] md:aspect-[32/9] overflow-hidden border border-beige flex items-center p-5 sm:p-6 md:p-10 mb-8 text-left">
+        <img 
+          src={meta.banner} 
+          alt={meta.title} 
+          style={{ objectPosition: meta.position || 'center' }}
+          className="absolute inset-0 w-full h-full object-cover z-1" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/15 z-2" />
+        <div className="relative z-10 text-white max-w-[75%] sm:max-w-[450px]">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider leading-none">
             {meta.title}
           </h2>
-          <p className="text-xs text-white/80 mt-1.5 leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-white/85 mt-1.5 leading-relaxed">
             {meta.desc}
           </p>
         </div>
       </div>
 
       {/* 3. Toolbar (Sort select and filters count info) */}
-      <div className="flex justify-between items-center border-y border-beige py-3 mb-8">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 border-y border-beige py-3 mb-8">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={() => setIsMobileFiltersOpen(true)}
             className="lg:hidden flex items-center gap-1.5 border border-black px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest"
@@ -168,19 +199,20 @@ export default function Shop({ type }) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label htmlFor="sort" className="text-[9px] font-bold uppercase tracking-widest text-black/50">Sort By</label>
+        <div className="flex items-center gap-2 ml-auto sm:ml-0">
+          <label htmlFor="sort" className="text-[9px] font-bold uppercase tracking-widest text-black/50 hidden sm:inline">Sort By</label>
           <select 
             id="sort" 
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="border border-beige bg-white text-xs font-semibold uppercase tracking-wider px-3 py-1.5 outline-none"
+            className="border border-beige bg-white text-[11px] sm:text-xs font-semibold uppercase tracking-wider px-2.5 sm:px-3 py-1.5 outline-none cursor-pointer"
           >
-            <option value="featured">Featured</option>
-            <option value="newest">Newest</option>
-            <option value="best">Best Selling</option>
+            <option value="newest">Newest → Oldest</option>
+            <option value="oldest">Oldest → Newest</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
+            <option value="best">Best Selling</option>
+            <option value="featured">Featured</option>
           </select>
         </div>
       </div>
@@ -190,6 +222,31 @@ export default function Shop({ type }) {
         
         {/* Desktop Sidebar Filters */}
         <aside className="hidden lg:flex flex-col gap-6 text-left">
+          
+          {/* Category filter list */}
+          {availableCategories.length > 0 && (
+            <div className="border-b border-beige pb-5">
+              <h3 className="font-serif text-xs font-bold tracking-widest uppercase mb-3">Category</h3>
+              <div className="flex flex-col gap-2">
+                {availableCategories.map(cat => (
+                  <label key={cat} className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCategories.includes(cat)}
+                      onChange={() => handleCategoryToggle(cat)}
+                      className="hidden" 
+                    />
+                    <span className={`w-3.5 h-3.5 border border-beige flex items-center justify-center text-[9px] font-bold ${
+                      selectedCategories.includes(cat) ? 'bg-black border-black text-white' : 'bg-white'
+                    }`}>
+                      {selectedCategories.includes(cat) && '✓'}
+                    </span>
+                    <span>{cat}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Sizes filter list */}
           {availableSizes.length > 0 && (
@@ -303,6 +360,31 @@ export default function Shop({ type }) {
           </div>
 
           <div className="space-y-6">
+            {/* Category */}
+            {availableCategories.length > 0 && (
+              <div className="border-b border-beige pb-5">
+                <h3 className="font-serif text-xs font-bold tracking-widest uppercase mb-3">Category</h3>
+                <div className="flex flex-col gap-2">
+                  {availableCategories.map(cat => (
+                    <label key={cat} className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCategories.includes(cat)}
+                        onChange={() => handleCategoryToggle(cat)}
+                        className="hidden" 
+                      />
+                      <span className={`w-3.5 h-3.5 border border-beige flex items-center justify-center text-[9px] font-bold ${
+                        selectedCategories.includes(cat) ? 'bg-black border-black text-white' : 'bg-white'
+                      }`}>
+                        {selectedCategories.includes(cat) && '✓'}
+                      </span>
+                      <span>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Sizes */}
             {availableSizes.length > 0 && (
               <div className="border-b border-beige pb-5">

@@ -1,59 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../supabase';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Eye, EyeOff, Check, AlertCircle, Info } from 'lucide-react';
 
 export default function CustomerLogin() {
   const { customer, showToast } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [email, setEmail] = useState('');
+  const returnTo = location.state?.from || location.state?.returnTo || '/account';
+
+  const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState(location.state?.infoMsg || '');
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState(location.state?.registeredEmail || '');
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
     if (customer) {
-      navigate('/account');
+      navigate(returnTo, { replace: true });
     }
-  }, [customer, navigate]);
+  }, [customer, returnTo, navigate]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
+
+    if (!cleanEmail || !cleanPassword) {
       setErrorMsg('Please enter both email and password.');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
+    setInfoMsg('');
+    setResendSuccess(false);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: cleanEmail,
+        password: cleanPassword
       });
 
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email address or password.');
-        } else {
-          throw error;
+        const errorMsgLower = (error.message || '').toLowerCase();
+        const errorCode = error.code || '';
+
+        // 1. Email not confirmed
+        if (
+          errorCode === 'email_not_confirmed' ||
+          errorMsgLower.includes('email not confirmed') ||
+          errorMsgLower.includes('not confirmed')
+        ) {
+          setUnconfirmedEmail(cleanEmail);
+          setErrorMsg('Please verify your email before signing in.');
+          return;
         }
+
+        // 2. Genuine Invalid credentials
+        if (
+          errorCode === 'invalid_credentials' ||
+          errorMsgLower.includes('invalid login credentials')
+        ) {
+          setErrorMsg('Invalid email address or password. Please check your credentials or reset your password.');
+          return;
+        }
+
+        // 3. Rate limits
+        if (
+          errorCode === 'over_email_send_rate_limit' ||
+          error.status === 429 ||
+          errorMsgLower.includes('rate limit')
+        ) {
+          setErrorMsg('Too many sign-in attempts. Please wait a few minutes before trying again.');
+          return;
+        }
+
+        // 4. Other general errors
+        setErrorMsg(error.message || 'Unable to sign in. Please try again.');
+        return;
       }
 
       showToast('Signed in successfully.');
-      navigate('/account');
+      navigate(returnTo, { replace: true });
     } catch (err) {
       console.error('Customer login error:', err);
       setErrorMsg(err.message || 'Unable to connect to account service.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const targetEmail = unconfirmedEmail || email.trim().toLowerCase();
+    if (!targetEmail) {
+      setErrorMsg('Please enter your email address to resend verification.');
+      return;
+    }
+
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: targetEmail
+      });
+      if (error) throw error;
+      setResendSuccess(true);
+      showToast('Verification email resent! Please check your inbox and spam folder.', 'success');
+    } catch (err) {
+      console.error('Resend verification error:', err);
+      showToast(err.message || 'Unable to resend verification email.', 'error');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -71,10 +138,40 @@ export default function CustomerLogin() {
           </p>
         </div>
 
+        {infoMsg && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold rounded-sm leading-relaxed flex items-start gap-2">
+            <Info className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+            <div>
+              <span>{infoMsg}</span>
+            </div>
+          </div>
+        )}
+
         {errorMsg && (
-          <div className="p-3 bg-accent/5 border border-accent/20 text-accent text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{errorMsg}</span>
+          <div className="p-3 bg-accent/5 border border-accent/20 text-accent text-[11px] font-semibold rounded-sm leading-relaxed">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+            {errorMsg === 'Please verify your email before signing in.' && (
+              <div className="mt-2.5 pt-2 border-t border-accent/15 flex items-center justify-between gap-2 text-[10px]">
+                <span className="text-black/60">Didn't receive the email?</span>
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resending}
+                  className="font-bold underline text-black hover:text-accent cursor-pointer disabled:opacity-50"
+                >
+                  {resending ? 'Sending...' : 'Resend Verification'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {resendSuccess && (
+          <div className="p-2.5 bg-green-50 border border-green-200 text-green-800 text-[10px] font-semibold rounded-sm">
+            ✓ A new verification link has been sent to your email inbox and spam folder.
           </div>
         )}
 
@@ -154,7 +251,7 @@ export default function CustomerLogin() {
         <div className="border-t border-beige pt-4 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider text-black/50">
             Don't have an account?{' '}
-            <Link to="/account/register" className="text-accent hover:underline">
+            <Link to="/account/register" state={{ from: returnTo }} className="text-accent hover:underline">
               Create Account
             </Link>
           </p>

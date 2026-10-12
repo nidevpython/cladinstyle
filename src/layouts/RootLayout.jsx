@@ -27,15 +27,14 @@ export default function RootLayout() {
     }
   }, [activeTransition]);
 
-  // When location pathname shifts, close/reset any active transition
+  // When location pathname shifts, close/reset any active transition and jump to top
   useEffect(() => {
     setActiveTransition(null);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [location.pathname, setActiveTransition]);
 
-  // Scroll to top and attach IntersectionObserver for scroll reveal animations
+  // Attach IntersectionObserver for scroll reveal animations
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -48,24 +47,28 @@ export default function RootLayout() {
       rootMargin: '0px 0px -30px 0px'
     });
 
-    const targets = document.querySelectorAll('.reveal, .reveal-stagger, .product-grid-stagger, .reveal-heading, .reveal-heading-center, .reveal-slide-left, .reveal-slide-right, .reveal-fade-scale');
+    const targets = document.querySelectorAll('.reveal:not(.active), .reveal-stagger:not(.active), .product-grid-stagger:not(.active), .reveal-heading:not(.active), .reveal-heading-center:not(.active), .reveal-slide-left:not(.active), .reveal-slide-right:not(.active), .reveal-fade-scale:not(.active)');
     targets.forEach(target => observer.observe(target));
 
     return () => {
-      targets.forEach(target => observer.unobserve(target));
+      observer.disconnect();
     };
-  }, [location, loadingProducts]);
+  }, [location.pathname, loadingProducts]);
 
-  // Monitor scroll for back-to-top display
+  // Monitor scroll for back-to-top display (passive + rAF throttled)
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (window.scrollY > 400) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldShow = window.scrollY > 400;
+          setShowScrollTop(prev => (prev !== shouldShow ? shouldShow : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

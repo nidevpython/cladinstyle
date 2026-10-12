@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import ProductCarousel from '../components/ProductCarousel';
 import { ShieldCheck, Sparkles, Truck, RotateCcw } from 'lucide-react';
@@ -7,66 +7,71 @@ import heroImage from '../assets/images/boutique_hero_lifestyle.jpg';
 import InstagramFeed from '../components/InstagramFeed';
 
 export default function Home() {
-  const navigate = useNavigate();
-  const { products, loadingProducts, fetchProducts } = useApp();
+  const { products, loadingProducts } = useApp();
+  const heroParallaxRef = useRef(null);
+  const campaignParallaxRef = useRef(null);
 
-  // Force refetch the latest products on homepage mount
-  React.useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  // Memoize filtered product lists to avoid recalculating on every scroll/state change
+  const { babyTrending, womenBest } = useMemo(() => {
+    const activeProducts = products.filter(p => p.isActive !== false);
 
-  // Filter lists for carousels (only show active products)
-  const activeProducts = products.filter(p => p.isActive !== false);
+    let baby = activeProducts.filter(p => p.category === 'baby' && p.isBestSeller);
+    if (baby.length === 0) {
+      baby = activeProducts.filter(p => p.category === 'baby');
+    }
 
-  const featuredProducts = activeProducts.filter(p => p.isFeatured);
-  const newArrivals = activeProducts.filter(p => p.isNew);
-  const bestSellers = activeProducts.filter(p => p.isBestSeller);
+    let women = activeProducts.filter(p => p.category === 'women' && p.isBestSeller);
+    if (women.length === 0) {
+      women = activeProducts.filter(p => p.category === 'women');
+    }
 
-  React.useEffect(() => {
-    console.log("Homepage products:", products);
-    console.log("Featured products:", featuredProducts);
-    console.log("New arrivals:", newArrivals);
-    console.log("Best sellers:", bestSellers);
-  }, [products, featuredProducts, newArrivals, bestSellers]);
+    return {
+      babyTrending: baby.slice(0, 8),
+      womenBest: women.slice(0, 8)
+    };
+  }, [products]);
 
-  // Baby trending section: best sellers first, otherwise general active baby products
-  let babyTrending = activeProducts.filter(p => p.category === 'baby' && p.isBestSeller);
-  if (babyTrending.length === 0) {
-    babyTrending = activeProducts.filter(p => p.category === 'baby');
-  }
-  babyTrending = babyTrending.slice(0, 8);
+  // Hardware-accelerated rAF scroll handler targeting only parallax nodes (desktop only)
+  useEffect(() => {
+    if (window.innerWidth <= 768 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
 
-  // Women trending section: best sellers first, otherwise general active women products
-  let womenBest = activeProducts.filter(p => p.category === 'women' && p.isBestSeller);
-  if (womenBest.length === 0) {
-    womenBest = activeProducts.filter(p => p.category === 'women');
-  }
-  womenBest = womenBest.slice(0, 8);
-
-  // Set up the CSS variable scroll handler for parallax
-  React.useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      document.documentElement.style.setProperty('--scroll-y', `${window.scrollY}px`);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = `${window.scrollY}px`;
+          if (heroParallaxRef.current) {
+            heroParallaxRef.current.style.setProperty('--scroll-y', y);
+          }
+          if (campaignParallaxRef.current) {
+            campaignParallaxRef.current.style.setProperty('--scroll-y', y);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      document.documentElement.style.removeProperty('--scroll-y');
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <div className="w-full">
       
       {/* 1. HERO SECTION */}
-      <section className="relative bg-black text-white overflow-hidden min-h-[600px] md:min-h-[650px] lg:min-h-[700px] flex items-center py-16 md:py-0">
+      <section className="relative bg-black text-white overflow-hidden min-h-[580px] sm:min-h-[620px] md:min-h-[650px] lg:min-h-[700px] flex items-end md:items-center pb-10 pt-52 sm:pt-56 md:py-0">
         
         {/* Full-size absolute background image */}
-        <div className="absolute inset-0 w-full h-[115%] -top-[7.5%] z-0 overflow-hidden hero-parallax-img-inner">
+        <div ref={heroParallaxRef} className="absolute inset-0 w-full h-full md:h-[115%] md:-top-[7.5%] z-0 overflow-hidden hero-parallax-img-inner">
           <img 
             src={heroImage} 
             alt="Clad in Style Boutique Hero Background" 
-            className="w-full h-full object-cover object-[62%_center] md:object-[68%_center] lg:object-[70%_center] hero-image"
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover object-[78%_15%] sm:object-[75%_20%] md:object-[68%_center] lg:object-[70%_center] hero-image"
           />
         </div>
 
@@ -76,20 +81,21 @@ export default function Home() {
         {/* Content Container */}
         <div className="relative z-10 max-w-[1320px] mx-auto px-5 w-full">
           <div className="max-w-[600px] flex flex-col items-start text-left md:pr-14">
-            <span className="hero-eyebrow text-[11px] font-bold tracking-[0.3em] text-accent uppercase mb-3 block">
+            <span className="hero-eyebrow text-[10px] sm:text-[11px] font-bold tracking-[0.3em] text-accent uppercase mb-2.5 sm:mb-3 block">
               New Arrivals
             </span>
-            <h2 className="hero-heading font-serif text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.12] uppercase mb-4 tracking-tight">
+            <h2 className="hero-heading font-serif text-3xl sm:text-5xl md:text-6xl font-semibold leading-[1.12] uppercase mb-3.5 sm:mb-4 tracking-tight">
               Made for<br />Every Moment.
             </h2>
-            <p className="hero-desc text-sm text-white/70 max-w-[420px] mb-8 leading-relaxed">
-              “Stylish. Comfortable. Made with love.<br />For the ones who matter most.”
+            <p className="hero-desc text-xs sm:text-sm text-white/80 max-w-[420px] mb-6 sm:mb-8 leading-relaxed">
+              “Grace in Every Stitch, Style in Every Stage.”<br />
+              <span className="text-white/65 text-[11px] sm:text-xs mt-1 block">Thoughtfully designed clothing for women, mothers, and children.</span>
             </p>
-            <div className="hero-buttons flex gap-4 flex-wrap">
-              <Link to="/baby" className="inline-flex items-center gap-2 bg-white text-black text-[11px] font-bold tracking-widest uppercase px-8 py-3.5 hover:bg-accent hover:text-white transition-all">
+            <div className="hero-buttons flex gap-3 sm:gap-4 flex-wrap w-full sm:w-auto">
+              <Link to="/baby" className="inline-flex items-center justify-center gap-2 bg-white text-black text-[11px] font-bold tracking-widest uppercase px-7 sm:px-8 py-3.5 hover:bg-accent hover:text-white transition-all">
                 Shop Baby →
               </Link>
-              <Link to="/women" className="inline-flex items-center gap-2 border border-white text-white text-[11px] font-bold tracking-widest uppercase px-8 py-3.5 hover:bg-white hover:text-black transition-all">
+              <Link to="/women" className="inline-flex items-center justify-center gap-2 border border-white text-white text-[11px] font-bold tracking-widest uppercase px-7 sm:px-8 py-3.5 hover:bg-white hover:text-black transition-all">
                 Shop Women →
               </Link>
             </div>
@@ -113,7 +119,7 @@ export default function Home() {
           <div className="flex items-start gap-3 text-left relative after:absolute after:right-[-10px] after:top-[10%] after:h-[80%] after:w-[1px] after:bg-beige after:hidden md:after:block last:after:hidden">
             <Sparkles className="h-6 w-6 text-black/70 shrink-0" />
             <div>
-              <h4 className="font-serif text-xs font-bold tracking-widest uppercase leading-tight">Skin Friendly</h4>
+              <h4 className="font-serif text-xs font-bold tracking-widest uppercase leading-tight">Baby Gentle</h4>
               <p className="text-[11px] text-black/60 mt-0.5">For baby's delicate skin</p>
             </div>
           </div>
@@ -127,10 +133,10 @@ export default function Home() {
           </div>
 
           <div className="flex items-start gap-3 text-left">
-            <RotateCcw className="h-6 w-6 text-black/70 shrink-0" />
+            <Sparkles className="h-6 w-6 text-black/70 shrink-0" />
             <div>
-              <h4 className="font-serif text-xs font-bold tracking-widest uppercase leading-tight">Easy Returns</h4>
-              <p className="text-[11px] text-black/60 mt-0.5">7 days return policy</p>
+              <h4 className="font-serif text-xs font-bold tracking-widest uppercase leading-tight">Artisanal Craft</h4>
+              <p className="text-[11px] text-black/60 mt-0.5">Handcrafted with love</p>
             </div>
           </div>
 
@@ -146,6 +152,8 @@ export default function Home() {
             <img 
               src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?q=80&w=800&auto=format&fit=crop" 
               alt="Baby Collection Banner" 
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 z-1"
             />
             <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 z-2" />
@@ -165,6 +173,8 @@ export default function Home() {
             <img 
               src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=800&auto=format&fit=crop" 
               alt="Women Collection Banner" 
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 z-1"
             />
             <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 z-2" />
@@ -240,11 +250,13 @@ export default function Home() {
       <section className="bg-black text-white border-y border-white/10 overflow-hidden relative min-h-[500px] lg:h-[550px] flex items-center justify-center py-16 lg:py-0 reveal">
         
         {/* Background Image Container */}
-        <div className="absolute inset-0 w-full h-[115%] -top-[7.5%] z-0 overflow-hidden campaign-parallax-bg">
+        <div ref={campaignParallaxRef} className="absolute inset-0 w-full h-full md:h-[115%] md:-top-[7.5%] z-0 overflow-hidden campaign-parallax-bg">
           <img 
             src="/assets/images/campaign-bg.jpg" 
             alt="Clad in Style Editorial Campaign Background" 
-            className="w-full h-full object-cover campaign-bg-img"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover object-[82%_20%] sm:object-[80%_center] lg:object-center campaign-bg-img"
           />
         </div>
 
@@ -253,8 +265,8 @@ export default function Home() {
         <div className="absolute inset-y-0 right-0 w-1/3 bg-black z-2 transition-transform duration-[1.2s] ease-out origin-right campaign-mask-right hidden lg:block" />
 
         {/* Dark Center Overlay */}
-        <div className="absolute inset-0 z-1 bg-gradient-to-r from-black/20 via-black/75 to-black/20 md:via-black/70 sm:from-black/10 sm:to-black/10" />
-        <div className="absolute inset-0 z-1 bg-black/45 md:hidden" />
+        <div className="hidden lg:block absolute inset-0 z-1 bg-gradient-to-r from-black/20 via-black/75 to-black/20" />
+        <div className="lg:hidden absolute inset-0 z-1 bg-gradient-to-b from-black/25 via-black/55 to-black/85" />
 
         {/* Center Content Container */}
         <div className="relative z-10 max-w-[1320px] mx-auto px-5 w-full flex flex-col items-center text-center">
@@ -264,7 +276,7 @@ export default function Home() {
               Clad in Style Boutique
             </span>
             
-            <h3 className="font-serif text-3.5xl sm:text-4xl lg:text-[42px] font-semibold leading-[1.15] tracking-wide uppercase mb-3.5 text-white reveal-child-2">
+            <h3 className="font-serif text-3xl sm:text-4xl lg:text-[42px] font-semibold leading-[1.15] tracking-wide uppercase mb-3.5 text-white reveal-child-2">
               The Art<br />Of Dressing
             </h3>
             
@@ -272,20 +284,20 @@ export default function Home() {
               Style made for every story.
             </p>
             
-            <p className="text-[11px] text-white/60 leading-relaxed font-sans max-w-[340px] mx-auto mb-8 font-light reveal-child-4">
+            <p className="text-[11px] text-white/75 leading-relaxed font-sans max-w-[340px] mx-auto mb-8 font-light reveal-child-4">
               “Thoughtfully designed pieces for women and little ones, made to become part of every beautiful moment.”
             </p>
             
-            <div className="flex justify-center items-center gap-4 reveal-child-5">
+            <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4 w-full sm:w-auto reveal-child-5">
               <Link 
                 to="/women" 
-                className="border border-white/20 text-white text-[9px] font-bold tracking-widest uppercase px-6 py-3.5 hover:bg-white hover:text-black hover:border-white transition-all duration-300"
+                className="border border-white/30 bg-black/30 backdrop-blur-[2px] text-white text-[9px] font-bold tracking-widest uppercase px-6 py-3.5 hover:bg-white hover:text-black hover:border-white transition-all duration-300"
               >
                 Shop Women →
               </Link>
               <Link 
                 to="/baby" 
-                className="border border-white/20 text-white text-[9px] font-bold tracking-widest uppercase px-6 py-3.5 hover:bg-white hover:text-black hover:border-white transition-all duration-300"
+                className="border border-white/30 bg-black/30 backdrop-blur-[2px] text-white text-[9px] font-bold tracking-widest uppercase px-6 py-3.5 hover:bg-white hover:text-black hover:border-white transition-all duration-300"
               >
                 Shop Baby →
               </Link>

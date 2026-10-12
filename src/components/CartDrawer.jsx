@@ -10,7 +10,8 @@ export default function CartDrawer() {
     setIsCartOpen,
     removeFromCart,
     updateCartQuantity,
-    getCartSubtotal
+    getCartSubtotal,
+    customer
   } = useApp();
 
   const navigate = useNavigate();
@@ -21,7 +22,16 @@ export default function CartDrawer() {
 
   const handleCheckoutClick = () => {
     setIsCartOpen(false);
-    navigate('/checkout');
+    if (!customer) {
+      navigate('/account/login', { 
+        state: { 
+          from: '/checkout',
+          infoMsg: 'Please sign in or create an account to complete checkout.' 
+        } 
+      });
+    } else {
+      navigate('/checkout');
+    }
   };
 
   return (

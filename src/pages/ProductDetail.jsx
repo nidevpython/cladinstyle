@@ -7,7 +7,7 @@ import { Star, Heart, MapPin, Truck, RotateCcw, ShieldCheck } from 'lucide-react
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { products, loadingProducts, addToCart, toggleWishlist, isInWishlist } = useApp();
+  const { products, loadingProducts, addToCart, toggleWishlist, isInWishlist, customer } = useApp();
 
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState('');
@@ -134,7 +134,16 @@ export default function ProductDetail() {
 
   const handleBuyNowClick = () => {
     addToCart(product.id, selectedSize, selectedColor, qty);
-    navigate('/checkout');
+    if (!customer) {
+      navigate('/account/login', { 
+        state: { 
+          from: '/checkout',
+          infoMsg: 'Please sign in or create an account to complete checkout.' 
+        } 
+      });
+    } else {
+      navigate('/checkout');
+    }
   };
 
   // Compile rating stars
@@ -179,7 +188,7 @@ export default function ProductDetail() {
         {/* Left Side: Image Gallery */}
         <div className="grid grid-cols-1 md:grid-cols-[2fr_10fr] gap-3">
           {/* Thumbnails */}
-          <div className="flex flex-row md:flex-col gap-2 order-2 md:order-1">
+          <div className="flex flex-row md:flex-col gap-2 order-2 md:order-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
             <button 
               onClick={() => setActiveImage(product.image)}
               className={`aspect-[4/5] overflow-hidden border ${
@@ -401,19 +410,15 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* Bullets shipping returns guidelines */}
+            {/* Bullets shipping guidelines */}
             <ul className="flex flex-col gap-2 border-t border-black/5 pt-4 text-[10px] font-bold tracking-wider uppercase text-black/60 list-none p-0 m-0">
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-accent shrink-0" />
-                <span>100% Skin friendly baby-safe textiles</span>
+                <span>100% Baby Gentle baby-safe textiles</span>
               </li>
               <li className="flex items-center gap-2">
                 <Truck className="h-3.5 w-3.5 text-accent shrink-0" />
                 <span>Dispatched within 24 Hours</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <RotateCcw className="h-3.5 w-3.5 text-accent shrink-0" />
-                <span>Easy 7 Days returns & exchanges</span>
               </li>
             </ul>
           </div>

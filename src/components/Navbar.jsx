@@ -20,16 +20,20 @@ export default function Navbar() {
   const [isSticky, setIsSticky] = useState(false);
   const location = useLocation();
 
-  // Scroll handler for sticky header scaling
+  // Scroll handler for sticky header scaling (passive + rAF throttled)
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (window.scrollY > 120) {
-        setIsSticky(true);
-      } else {
-        setIsSticky(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldBeSticky = window.scrollY > 120;
+          setIsSticky(prev => (prev !== shouldBeSticky ? shouldBeSticky : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -52,7 +56,12 @@ export default function Navbar() {
             
             {/* Left: Brand logo */}
             <Link to="/" className="brand-logo">
-              <img src={storeLogoUrl ? `${storeLogoUrl}?t=${Date.now()}` : logoImg} alt="Clad in Style Boutique" />
+              <img 
+                src={storeLogoUrl || logoImg} 
+                alt="Clad in Style Boutique" 
+                decoding="async"
+                className="brand-logo-img"
+              />
             </Link>
 
             {/* Center: Navigation Links (Desktop) */}
@@ -80,7 +89,7 @@ export default function Navbar() {
               {/* Account Profile Link */}
               <Link 
                 to="/account" 
-                className={`hidden sm:block p-1.5 transition-colors ${customer ? 'text-accent' : 'text-black hover:text-accent'}`}
+                className={`p-1.5 transition-colors ${customer ? 'text-accent' : 'text-black hover:text-accent'}`}
                 aria-label="User Account"
               >
                 <User className="h-4.5 w-4.5" />
@@ -140,11 +149,16 @@ export default function Navbar() {
         
         <div>
           {/* Header */}
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex justify-between items-center mb-8">
             <Link to="/" className="brand-logo">
-              <img src={storeLogoUrl ? `${storeLogoUrl}?t=${Date.now()}` : logoImg} alt="Clad in Style Boutique" />
+              <img 
+                src={storeLogoUrl || logoImg} 
+                alt="Clad in Style Boutique" 
+                decoding="async"
+                className="w-[120px] max-h-[48px] object-contain object-left" 
+              />
             </Link>
-            <button onClick={() => setIsMobileNavOpen(false)} className="p-1 hover:text-accent transition-colors">
+            <button onClick={() => setIsMobileNavOpen(false)} className="p-1 hover:text-accent transition-colors" aria-label="Close Navigation Menu">
               <X className="h-5.5 w-5.5" />
             </button>
           </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../supabase';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Check, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function CustomerForgotPassword() {
   const { showToast } = useApp();
@@ -14,7 +14,8 @@ export default function CustomerForgotPassword() {
 
   const handleResetRequest = async (e) => {
     e.preventDefault();
-    if (!email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
       setErrorMsg('Please enter your email address.');
       return;
     }
@@ -27,11 +28,16 @@ export default function CustomerForgotPassword() {
       // Use window.location.origin + hash structure for HashRouter compatibility
       const resetRedirectUrl = `${window.location.origin}/#/account/reset-password`;
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: resetRedirectUrl
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'over_email_send_rate_limit' || error.status === 429 || (error.message || '').toLowerCase().includes('rate limit')) {
+          throw new Error('Too many password reset requests. Please wait a few minutes before trying again.');
+        }
+        throw error;
+      }
 
       setSuccess(true);
       showToast('Password reset email sent successfully.', 'success');

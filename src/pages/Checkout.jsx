@@ -1,12 +1,25 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../supabase';
-import { CreditCard, Check, Sparkles, AlertCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function Checkout() {
-  const { cart, getCartSubtotal, clearCart, customer, customerProfile } = useApp();
+  const { cart, getCartSubtotal, clearCart, customer, customerProfile, loadingCustomer } = useApp();
   const navigate = useNavigate();
+
+  // Redirect unauthenticated customer to Sign In while preserving checkout return destination
+  React.useEffect(() => {
+    if (!loadingCustomer && !customer) {
+      navigate('/account/login', { 
+        state: { 
+          from: '/checkout',
+          infoMsg: 'Please sign in or create an account to complete checkout.' 
+        }, 
+        replace: true 
+      });
+    }
+  }, [customer, loadingCustomer, navigate]);
 
   // Auto-fill user details if logged in
   React.useEffect(() => {
@@ -52,22 +65,34 @@ export default function Checkout() {
     setErrorMsg('');
 
     try {
-      // 1. Generate unique order number
+      // 1. Generate unique order number & pre-generate UUID
       const orderNum = `CLAD-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+      const orderIdDb = crypto.randomUUID();
 
-      // 2. Map data
+      // 2. Map data & ensure valid user_id matches authenticated session
       const customerName = `${fname} ${lname}`.trim();
-      const shippingAddress = address;
+      const shippingAddress = address.trim();
+
+      let currentUserId = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          currentUserId = session.user.id;
+        }
+      } catch {
+        currentUserId = customer?.id || null;
+      }
 
       const orderPayload = {
+        id: orderIdDb,
         order_number: orderNum,
         customer_name: customerName,
-        customer_email: email,
-        customer_phone: phone,
+        customer_email: email.trim(),
+        customer_phone: phone.trim(),
         shipping_address: shippingAddress,
-        city,
-        state,
-        pincode: zip,
+        city: city.trim(),
+        state: state.trim(),
+        pincode: zip.trim(),
         subtotal: parseFloat(subtotal),
         shipping_charge: parseFloat(shipping),
         discount: 0.00,
@@ -75,33 +100,33 @@ export default function Checkout() {
         payment_method: paymethod.toUpperCase(),
         payment_status: paymethod === 'cod' ? 'pending' : 'paid',
         order_status: 'pending',
-        user_id: customer ? customer.id : null
+        user_id: currentUserId
       };
 
-      // 3. Insert order
-      const { data: newOrder, error: orderErr } = await supabase
+      // 3. Insert order (pure insert, no secondary select to avoid guest read restrictions)
+      const { error: orderErr } = await supabase
         .from('orders')
-        .insert(orderPayload)
-        .select('id')
-        .single();
+        .insert(orderPayload);
 
       if (orderErr) {
         console.error('Order table insert error:', orderErr);
         throw new Error('Order creation failed: ' + (orderErr.message || 'Please try again.'));
       }
 
-      const orderIdDb = newOrder.id;
       // 4. Map items
-      const itemsPayload = cart.map(item => ({
-        order_id: orderIdDb,
-        product_id: item.id ? parseInt(item.id) : null,
-        product_name: item.name,
-        product_image: item.image,
-        size: item.size,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.price),
-        total_price: parseFloat(item.price * item.quantity)
-      }));
+      const itemsPayload = cart.map(item => {
+        const parsedId = item.id ? parseInt(item.id, 10) : NaN;
+        return {
+          order_id: orderIdDb,
+          product_id: isNaN(parsedId) ? null : parsedId,
+          product_name: item.name,
+          product_image: item.image,
+          size: item.size || 'Standard',
+          quantity: item.quantity,
+          unit_price: parseFloat(item.price),
+          total_price: parseFloat(item.price * item.quantity)
+        };
+      });
 
       // 5. Insert order items
       const { error: itemsErr } = await supabase
@@ -110,8 +135,8 @@ export default function Checkout() {
 
       if (itemsErr) {
         console.error('Order items table insert error:', itemsErr);
-        // Transaction safety: Clean up parent order if items fail
-        await supabase.from('orders').delete().eq('id', orderIdDb);
+        // Best-effort cleanup parent order if items fail
+        await supabase.from('orders').delete().eq('id', orderIdDb).catch(() => {});
         throw new Error('Unable to save order items: ' + (itemsErr.message || 'Please try again.'));
       }
 
@@ -217,6 +242,19 @@ export default function Checkout() {
         </div>
       </div>
     );
+  }
+
+  if (loadingCustomer) {
+    return (
+      <div className="max-w-[1320px] mx-auto px-5 py-32 text-center font-sans">
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-black/50">Verifying customer session...</p>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return null;
   }
 
   return (

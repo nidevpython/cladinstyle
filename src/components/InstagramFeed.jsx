@@ -8,17 +8,14 @@ export default function InstagramFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  const sectionRef = useRef(null);
   const containerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const [failedImageIds, setFailedImageIds] = useState(new Set());
-
-  // Track console output on post changes
-  useEffect(() => {
-    console.log("Instagram posts:", posts);
-  }, [posts]);
 
   const handleImageError = (postId) => {
     setFailedImageIds(prev => {
@@ -27,6 +24,18 @@ export default function InstagramFeed() {
       return next;
     });
   };
+
+  // Only run the auto-slide rAF loop when the section is visible in viewport
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsInView(entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchFeed = async () => {
@@ -65,9 +74,9 @@ export default function InstagramFeed() {
     fetchFeed();
   }, []);
 
-  // Frame Loop Scroll Handler (Auto-slide animation)
+  // Frame Loop Scroll Handler (Auto-slide animation - runs only when in viewport)
   useEffect(() => {
-    if (!instagramConfig.autoSlide || loading || posts.length === 0 || isDragging || isHovered) return;
+    if (!instagramConfig.autoSlide || loading || posts.length === 0 || isDragging || isHovered || !isInView) return;
 
     let frameId;
     const container = containerRef.current;
@@ -85,7 +94,7 @@ export default function InstagramFeed() {
 
     frameId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(frameId);
-  }, [instagramConfig.autoSlide, instagramConfig.slideSpeed, loading, posts, isDragging, isHovered]);
+  }, [instagramConfig.autoSlide, instagramConfig.slideSpeed, loading, posts, isDragging, isHovered, isInView]);
 
   // Mouse Drag / Touch Swipe Handlers
   const startDrag = (pageX) => {
@@ -109,7 +118,7 @@ export default function InstagramFeed() {
   const displayPosts = [...posts, ...posts];
 
   return (
-    <section className="max-w-[1320px] mx-auto px-5 py-12 md:py-20 text-center relative overflow-hidden">
+    <section ref={sectionRef} className="max-w-[1320px] mx-auto px-5 py-12 md:py-20 text-center relative overflow-hidden">
       
       {/* Headings block */}
       <div className="reveal-heading-center mb-8">
@@ -175,8 +184,8 @@ export default function InstagramFeed() {
           onTouchEnd={endDrag}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => { endDrag(); setIsHovered(false); setIsDragging(false); }}
-          className="flex gap-3 md:gap-4 overflow-x-auto select-none no-scrollbar cursor-grab active:cursor-grabbing w-full scroll-smooth"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="flex gap-3 md:gap-4 overflow-x-auto select-none no-scrollbar cursor-grab active:cursor-grabbing w-full"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'auto' }}
         >
           {displayPosts.map((post, idx) => (
             <a 
@@ -189,6 +198,8 @@ export default function InstagramFeed() {
               <img 
                 src={failedImageIds.has(post.id) ? 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=300&auto=format&fit=crop' : post.image} 
                 alt={post.caption || 'Instagram Post'} 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 draggable="false"
                 onError={() => handleImageError(post.id)}

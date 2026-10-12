@@ -62,7 +62,8 @@ export const AppProvider = ({ children }) => {
           stock: p.total_stock || 0,
           isNew: p.new_arrival || false,
           isBestSeller: p.best_seller || false,
-          isActive: p.is_active || false
+          isActive: p.is_active || false,
+          createdAt: p.created_at || null
         };
       });
 
@@ -168,8 +169,11 @@ export const AppProvider = ({ children }) => {
   }, [toast]);
 
   // --- Cart Operations ---
-  const addToCart = (productId, size, color, quantity = 1) => {
-    const matchedProduct = products.find(p => p.id === productId);
+  const addToCart = (productId, size, color, quantity = 1, customItem = null) => {
+    let matchedProduct = products.find(p => p.id === productId);
+    if (!matchedProduct && customItem) {
+      matchedProduct = customItem;
+    }
     if (!matchedProduct) return;
 
     setCart(prev => {
@@ -253,59 +257,105 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Customer Authentication State ---
+  // --- Customer Authentication State ---
   const [customer, setCustomer] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [loadingCustomer, setLoadingCustomer] = useState(true);
 
+  // Helper to fetch or automatically sync customer profile from user metadata
+  const fetchOrSyncProfile = useCallback(async (user) => {
+    if (!user?.id) return null;
+    try {
+      const { data: profile, error } = await supabase
+        .from('customer_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) return profile;
+
+      // Auto-create/sync if profile is missing
+      const meta = user.user_metadata || {};
+      const { data: newProfile } = await supabase
+        .from('customer_profiles')
+        .upsert({
+          id: user.id,
+          first_name: meta.first_name || '',
+          last_name: meta.last_name || '',
+          email: user.email || '',
+          phone: meta.phone || '',
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .maybeSingle();
+
+      return newProfile || null;
+    } catch (err) {
+      console.warn('Customer profile fetch/sync notice:', err);
+      return null;
+    }
+  }, []);
+
+  const signOutCustomer = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setCustomer(null);
+      setCustomerProfile(null);
+      showToast('Signed out successfully.', 'info');
+    }
+  };
+
   useEffect(() => {
-    const initSession = async () => {
+    let isMounted = true;
+
+    // Handle incoming confirmation token in URL hash if redirected by Supabase
+    if (window.location.hash.includes('access_token=') && window.location.hash.includes('type=signup')) {
+      showToast('Email verified successfully! Welcome to Clad In Style.');
+      setTimeout(() => {
+        if (window.location.hash.includes('access_token=')) {
+          window.location.hash = '#/account';
+        }
+      }, 300);
+    }
+
+    const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        if (session?.user && isMounted) {
           setCustomer(session.user);
-          const { data: profile, error: profErr } = await supabase
-            .from('customer_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (profErr) throw profErr;
-          setCustomerProfile(profile);
+          const prof = await fetchOrSyncProfile(session.user);
+          if (isMounted) setCustomerProfile(prof);
         }
       } catch (err) {
-        console.error('Error fetching initial auth session / profile:', err);
+        console.error('Error loading initial customer auth session:', err);
       } finally {
-        setLoadingCustomer(false);
+        if (isMounted) setLoadingCustomer(false);
       }
     };
-    initSession();
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setLoadingCustomer(true);
+      if (!isMounted) return;
       if (session?.user) {
         setCustomer(session.user);
-        try {
-          const { data: profile, error: profErr } = await supabase
-            .from('customer_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (profErr) throw profErr;
-          setCustomerProfile(profile);
-        } catch (err) {
-          console.error('Error loading customer profile on state change:', err);
-          setCustomerProfile(null);
-        }
+        const prof = await fetchOrSyncProfile(session.user);
+        if (isMounted) setCustomerProfile(prof);
       } else {
         setCustomer(null);
         setCustomerProfile(null);
       }
-      setLoadingCustomer(false);
+      if (isMounted) setLoadingCustomer(false);
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [fetchOrSyncProfile]);
 
   return (
     <AppContext.Provider
@@ -340,6 +390,8 @@ export const AppProvider = ({ children }) => {
         loadingCustomer,
         setCustomer,
         setCustomerProfile,
+        signOutCustomer,
+        fetchOrSyncProfile,
         storeLogoUrl,
         setStoreLogoUrl,
         fetchProducts

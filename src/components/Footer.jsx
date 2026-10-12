@@ -18,11 +18,6 @@ export default function Footer() {
     e.target.reset();
   };
 
-  const handleLinkClick = (e, text) => {
-    e.preventDefault();
-    showToast(`${text} pages and triggers are simulated in this boutique demo.`, 'info');
-  };
-
   return (
     <footer className="bg-black text-white pt-16 md:pt-20 pb-8 border-t border-white/10">
       <div className="max-w-[1320px] mx-auto px-5">
@@ -36,7 +31,7 @@ export default function Footer() {
               <img src={logoImg} alt="Clad in Style Boutique" className="w-[120px] md:w-[135px] h-auto object-contain" />
             </Link>
             <p className="text-xs text-white/60 leading-relaxed max-w-[220px]">
-              For her. Love for little ones. Thoughtfully designed clothing for baby & women.
+              “Grace in Every Stitch, Style in Every Stage.” Thoughtfully designed apparel for women and children.
             </p>
             <div className="flex gap-3 mt-1.5">
               <a href="https://www.instagram.com/clad_in_style_cis/" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Instagram">
@@ -45,11 +40,10 @@ export default function Footer() {
               <a href="https://facebook.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Facebook">
                 <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Twitter">
-                <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-              </a>
-              <a href="#pinterest" onClick={(e) => handleLinkClick(e, 'Pinterest')} className="text-white/60 hover:text-accent transition-colors font-serif text-[13px] font-bold" aria-label="Pinterest">
-                P
+              <a href="https://pinterest.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Pinterest">
+                <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+                </svg>
               </a>
             </div>
           </div>
@@ -62,7 +56,7 @@ export default function Footer() {
               <li><Link to="/women" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Women's Clothing</Link></li>
               <li><Link to="/new-arrivals" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">New Arrivals</Link></li>
               <li><Link to="/women" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Best Sellers</Link></li>
-              <li><a href="#giftcards" onClick={(e) => handleLinkClick(e, 'Gift Cards')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Gift Cards</a></li>
+              <li><Link to="/gift-cards" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Gift Cards</Link></li>
             </ul>
           </div>
 
@@ -70,11 +64,10 @@ export default function Footer() {
           <div>
             <h4 className="font-serif text-sm font-bold tracking-wider uppercase mb-5">Customer Service</h4>
             <ul className="flex flex-col gap-3 list-none p-0 m-0">
-              <li><a href="#track" onClick={(e) => handleLinkClick(e, 'Order Tracking')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Track Order</a></li>
-              <li><a href="#returns" onClick={(e) => handleLinkClick(e, 'Returns')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Returns & Exchange</a></li>
-              <li><a href="#shipping" onClick={(e) => handleLinkClick(e, 'Shipping Policy')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Shipping Policy</a></li>
-              <li><a href="#faqs" onClick={(e) => handleLinkClick(e, 'FAQs')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">FAQs</a></li>
-              <li><a href="#sizeguide" onClick={(e) => handleLinkClick(e, 'Size Guide')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Size Guide</a></li>
+              <li><Link to="/track-order" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Track Order</Link></li>
+              <li><Link to="/shipping-policy" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Shipping Policy</Link></li>
+              <li><Link to="/faqs" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">FAQs</Link></li>
+              <li><Link to="/size-guide" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Size Guide</Link></li>
             </ul>
           </div>
 
@@ -84,8 +77,8 @@ export default function Footer() {
             <ul className="flex flex-col gap-3 list-none p-0 m-0">
               <li><Link to="/about" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">About Us</Link></li>
               <li><Link to="/contact" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Contact Us</Link></li>
-              <li><a href="#privacy" onClick={(e) => handleLinkClick(e, 'Privacy Policy')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Privacy Policy</a></li>
-              <li><a href="#terms" onClick={(e) => handleLinkClick(e, 'Terms')} className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Terms & Conditions</a></li>
+              <li><Link to="/privacy-policy" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Privacy Policy</Link></li>
+              <li><Link to="/terms-conditions" className="text-xs text-white/60 hover:text-white hover:pl-0.5 transition-all">Terms & Conditions</Link></li>
             </ul>
           </div>
 
@@ -119,7 +112,7 @@ export default function Footer() {
               <img src={logoImg} alt="Clad in Style Boutique" className="w-[110px] h-auto object-contain" />
             </Link>
             <p className="text-xs text-white/60 leading-relaxed max-w-[320px]">
-              For her. Love for little ones. Thoughtfully designed clothing for baby & women.
+              “Grace in Every Stitch, Style in Every Stage.” Thoughtfully designed apparel for women and children.
             </p>
             <div className="flex gap-4 mt-1">
               <a href="https://www.instagram.com/clad_in_style_cis/" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Instagram">
@@ -128,11 +121,10 @@ export default function Footer() {
               <a href="https://facebook.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Facebook">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Twitter">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-              </a>
-              <a href="#pinterest" onClick={(e) => handleLinkClick(e, 'Pinterest')} className="text-white/60 hover:text-accent transition-colors font-serif text-[15px] font-bold" aria-label="Pinterest">
-                P
+              <a href="https://pinterest.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-accent transition-colors" aria-label="Pinterest">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+                </svg>
               </a>
             </div>
           </div>
@@ -152,7 +144,7 @@ export default function Footer() {
                 <li><Link to="/women" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Women's Clothing</span><span className="text-[10px] text-white/30">›</span></Link></li>
                 <li><Link to="/new-arrivals" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>New Arrivals</span><span className="text-[10px] text-white/30">›</span></Link></li>
                 <li><Link to="/women" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Best Sellers</span><span className="text-[10px] text-white/30">›</span></Link></li>
-                <li><a href="#giftcards" onClick={(e) => handleLinkClick(e, 'Gift Cards')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Gift Cards</span><span className="text-[10px] text-white/30">›</span></a></li>
+                <li><Link to="/gift-cards" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Gift Cards</span><span className="text-[10px] text-white/30">›</span></Link></li>
               </ul>
             </div>
           </div>
@@ -168,11 +160,10 @@ export default function Footer() {
             </button>
             <div className={`overflow-hidden transition-all duration-300 ${activeAccordion === 'service' ? 'max-h-[250px] mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
               <ul className="flex flex-col gap-3.5 list-none p-0 m-0 pb-4">
-                <li><a href="#track" onClick={(e) => handleLinkClick(e, 'Order Tracking')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Track Order</span><span className="text-[10px] text-white/30">›</span></a></li>
-                <li><a href="#returns" onClick={(e) => handleLinkClick(e, 'Returns')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Returns & Exchange</span><span className="text-[10px] text-white/30">›</span></a></li>
-                <li><a href="#shipping" onClick={(e) => handleLinkClick(e, 'Shipping Policy')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Shipping Policy</span><span className="text-[10px] text-white/30">›</span></a></li>
-                <li><a href="#faqs" onClick={(e) => handleLinkClick(e, 'FAQs')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>FAQs</span><span className="text-[10px] text-white/30">›</span></a></li>
-                <li><a href="#sizeguide" onClick={(e) => handleLinkClick(e, 'Size Guide')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Size Guide</span><span className="text-[10px] text-white/30">›</span></a></li>
+                <li><Link to="/track-order" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Track Order</span><span className="text-[10px] text-white/30">›</span></Link></li>
+                <li><Link to="/shipping-policy" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Shipping Policy</span><span className="text-[10px] text-white/30">›</span></Link></li>
+                <li><Link to="/faqs" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>FAQs</span><span className="text-[10px] text-white/30">›</span></Link></li>
+                <li><Link to="/size-guide" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Size Guide</span><span className="text-[10px] text-white/30">›</span></Link></li>
               </ul>
             </div>
           </div>
@@ -190,8 +181,8 @@ export default function Footer() {
               <ul className="flex flex-col gap-3.5 list-none p-0 m-0 pb-4">
                 <li><Link to="/about" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>About Us</span><span className="text-[10px] text-white/30">›</span></Link></li>
                 <li><Link to="/contact" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Contact Us</span><span className="text-[10px] text-white/30">›</span></Link></li>
-                <li><a href="#privacy" onClick={(e) => handleLinkClick(e, 'Privacy Policy')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Privacy Policy</span><span className="text-[10px] text-white/30">›</span></a></li>
-                <li><a href="#terms" onClick={(e) => handleLinkClick(e, 'Terms')} className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Terms & Conditions</span><span className="text-[10px] text-white/30">›</span></a></li>
+                <li><Link to="/privacy-policy" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Privacy Policy</span><span className="text-[10px] text-white/30">›</span></Link></li>
+                <li><Link to="/terms-conditions" className="text-xs text-white/60 hover:text-white flex justify-between items-center"><span>Terms & Conditions</span><span className="text-[10px] text-white/30">›</span></Link></li>
               </ul>
             </div>
           </div>
@@ -222,16 +213,6 @@ export default function Footer() {
           <p className="text-[10px] text-white/40 tracking-wider">
             © 2026 Clad in Style Boutique. All rights reserved.
           </p>
-          <div className="flex gap-2">
-            {['Visa', 'Mastercard', 'UPI', 'Paytm'].map(badge => (
-              <span 
-                key={badge}
-                className="font-sans text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 border border-white/10 bg-white/3 text-white/60 rounded-[2px]"
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
         </div>
 
       </div>
